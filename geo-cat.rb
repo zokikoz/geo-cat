@@ -4,18 +4,37 @@
 
 require 'json'
 
-new_geojson = { 'type' => 'FeatureCollection', 'features' => [] }
+# GeoJSON object
+class GeoJSON
+  # Creating empty GeoJSON feature collection
+  def initialize
+    @collection = { 'type' => 'FeatureCollection', 'features' => [] }
+  end
 
-exit 1 if ARGV.empty?
+  # Adding features from GeoJSON file to object collection
+  def add(filename)
+    json_hash = JSON.parse(File.read(filename))
+    # Inserting features array elements into object features collection
+    json_hash['features'].each do |feature|
+      @collection['features'] << feature
+    end
+  end
 
-ARGV.each do |geojson_file|
-  json_hash = JSON.parse(File.read(geojson_file))
-  json_hash['features'].each do |feature|
-    new_geojson['features'] << feature
+  # Saving object collection to GeoJSON file
+  # Use 'pretty: true' to generate formatted output
+  def save(filename, pretty: false)
+    File.open(filename, 'w') do |f|
+      pretty == true ? f.write(JSON.pretty_generate(@collection)) : f.write(JSON.generate(@collection))
+    end
   end
 end
 
-file_name = "#{ARGV[0].split('.').first}-plus.geojson"
-File.open(file_name, 'w') do |f|
-  f.write(JSON.pretty_generate(new_geojson))
+exit 1 if ARGV.empty?
+
+collection = GeoJSON.new
+
+ARGV.each do |geojson_file|
+  collection.add(geojson_file)
 end
+
+collection.save('result.geojson')

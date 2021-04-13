@@ -4,6 +4,8 @@
 
 require 'json'
 
+HELP = 'Usage: geo-cat.rb [source_dir] [result_file]'.freeze
+
 # GeoJSON object
 class GeoJSON
   # Creating empty GeoJSON feature collection
@@ -29,12 +31,32 @@ class GeoJSON
   end
 end
 
-exit 1 if ARGV.empty?
+# Checking arguments
+options = { mask: '*.geojson', result: 'result.geojson'}
+unless ARGV.empty?
+  case ARGV.length
+  when 1
+    if %w[/? -? -h --help].include?(ARGV[0])
+      puts HELP; exit 0
+    else
+      options.merge!({ mask: "#{ARGV[0]}/*.geojson", result: "#{ARGV[0]}/result.geojson" })
+    end
+  when 2
+    options.merge!({ mask: "#{ARGV[0]}/*.geojson", result: ARGV[1] })
+  else
+    puts HELP; exit 0
+  end
+end
 
 collection = GeoJSON.new
 
-ARGV.each do |geojson_file|
+# Getting .geojson files from directory
+source_files = Dir[options[:mask]]
+# Removing result file
+source_files -= [options[:result]]
+
+source_files.each do |geojson_file|
   collection.add(geojson_file)
 end
 
-collection.save('result.geojson')
+collection.save(options[:result])

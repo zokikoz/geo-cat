@@ -16,10 +16,19 @@ class GeoJSON
   # Adding features from GeoJSON file to object collection
   def add(filename)
     json_hash = JSON.parse(File.read(filename))
+    raise StandardError, 'Missing GeoJSON data' unless %w[Feature FeatureCollection].include?(json_hash['type'])
+
     # Inserting features array elements into object features collection
-    json_hash['features'].each do |feature|
-      @collection['features'] << feature
+    case json_hash['type']
+    when 'FeatureCollection'
+      json_hash['features'].each do |feature|
+        @collection['features'] << feature
+      end
+    when 'Feature'
+      @collection['features'] << json_hash
     end
+  rescue StandardError => e
+    puts "#{e} in #{filename}"
   end
 
   # Saving object collection to GeoJSON file
@@ -32,7 +41,7 @@ class GeoJSON
 end
 
 # Checking arguments
-options = { mask: '*.geojson', result: 'result.geojson'}
+options = { mask: '*.geojson', result: 'result.geojson' }
 unless ARGV.empty?
   case ARGV.length
   when 1

@@ -4,7 +4,7 @@
 
 require 'json'
 
-HELP = 'Usage: geo-cat.rb [source_dir] [result_file]'.freeze
+HELP = "Usage: geo-cat.rb [-f] [-d source_dir] [-r result_file]\n\e[7C-f - Formatted output".freeze
 
 # GeoJSON object
 class GeoJSON
@@ -33,27 +33,27 @@ class GeoJSON
 
   # Saving object collection to GeoJSON file
   # Use 'pretty: true' to generate formatted output
-  def save(filename, pretty: false)
-    File.open(filename, 'w') do |f|
-      pretty == true ? f.write(JSON.pretty_generate(@collection)) : f.write(JSON.generate(@collection))
+  def save(opt)
+    File.open(opt[:result], 'w') do |f|
+      opt[:pretty] == true ? f.write(JSON.pretty_generate(@collection)) : f.write(JSON.generate(@collection))
     end
   end
 end
 
 # Checking arguments
-options = { mask: '*.geojson', result: 'result.geojson' }
+options = { mask: '*.geojson', result: 'result.geojson', pretty: false }
 unless ARGV.empty?
-  case ARGV.length
-  when 1
-    if %w[/? -? -h --help].include?(ARGV[0])
+  ARGV.each_with_index do |argument, id|
+    if %w[/? -? -h --help].include?(argument)
       puts HELP; exit 0
-    else
-      options.merge!({ mask: "#{ARGV[0]}/*.geojson", result: "#{ARGV[0]}/result.geojson" })
+    elsif %w[-d --dir].include?(argument) && !ARGV[id + 1].nil?
+      options[:mask] = "#{ARGV[id + 1]}/*.geojson"
+      options[:result] = "#{ARGV[id + 1]}/result.geojson" if options[:result] == 'result.geojson'
+    elsif %w[-r --result].include?(argument) && !ARGV[id + 1].nil?
+      options[:result] = ARGV[id + 1]
+    elsif %w[-f --format].include?(argument)
+      options[:pretty] = true
     end
-  when 2
-    options.merge!({ mask: "#{ARGV[0]}/*.geojson", result: ARGV[1] })
-  else
-    puts HELP; exit 0
   end
 end
 
@@ -65,7 +65,9 @@ source_files = Dir[options[:mask]]
 source_files -= [options[:result]]
 
 source_files.each do |geojson_file|
+  puts "Parsing #{geojson_file}"
   collection.add(geojson_file)
 end
 
-collection.save(options[:result])
+puts "Saving #{options[:result]}"
+collection.save(options)

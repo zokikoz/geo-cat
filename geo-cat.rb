@@ -28,7 +28,7 @@ class GeoJSON
       @collection['features'] << json_hash
     end
   rescue StandardError => e
-    puts "#{e} in #{filename}"
+    puts "Error #{e} in #{filename}"
   end
 
   # Saving object collection to GeoJSON file
@@ -64,8 +64,13 @@ source_files = Dir[options[:mask]]
 # Removing result file
 source_files -= [options[:result]]
 
+if source_files.empty?
+  puts 'Can\'t find .geojson files'
+  exit 0
+end
+
+puts "Parsing #{source_files.length} file(s)"
 source_files.each do |geojson_file|
-  puts "Parsing #{geojson_file}"
   collection.add(geojson_file)
 end
 

@@ -4,7 +4,12 @@
 
 require 'json'
 
-HELP = "Usage: geo-cat.rb [-f] [-d source_dir] [-r result_file]\n\e[7C-f - Formatted output".freeze
+help = proc do
+  puts "Usage: geo-cat.rb [-fn] [-d source_dir] [-r result_file]
+  -f - Formatted output
+  -n - Store filename in feature properties"
+  exit 0
+end
 
 # GeoJSON object
 class GeoJSON
@@ -14,7 +19,7 @@ class GeoJSON
   end
 
   # Adding features from GeoJSON file to object collection
-  def add(filename)
+  def add(filename, add_name)
     json_hash = JSON.parse(File.read(filename))
     raise StandardError, 'Missing GeoJSON data' unless %w[Feature FeatureCollection].include?(json_hash['type'])
 
@@ -27,6 +32,8 @@ class GeoJSON
     when 'Feature'
       @collection['features'] << json_hash
     end
+    # Adding name to feature
+    feature_name(filename) if add_name
   rescue StandardError => e
     puts "Error #{e} in #{filename}"
   end
@@ -38,21 +45,35 @@ class GeoJSON
       opt[:pretty] == true ? f.write(JSON.pretty_generate(@collection)) : f.write(JSON.generate(@collection))
     end
   end
+
+  private
+
+  def feature_name(filename)
+    name = File.basename(filename, File.extname(filename)) # Removing extension from filename
+    @collection['features'].last['properties'] = { 'name' => name }
+  end
 end
 
-# Checking arguments
-options = { mask: '*.geojson', result: 'result.geojson', pretty: false }
+# Checking arguments and setting options
+options = { mask: '*.geojson', result: 'result.geojson', pretty: false, add_name: false }
 unless ARGV.empty?
   ARGV.each_with_index do |argument, id|
-    if %w[/? -? -h --help].include?(argument)
-      puts HELP; exit 0
-    elsif %w[-d --dir].include?(argument) && !ARGV[id + 1].nil?
+    if argument == '-d' && !ARGV[id + 1].nil?
       options[:mask] = "#{ARGV[id + 1]}/*.geojson"
       options[:result] = "#{ARGV[id + 1]}/result.geojson" if options[:result] == 'result.geojson'
-    elsif %w[-r --result].include?(argument) && !ARGV[id + 1].nil?
+    elsif argument == '-r' && !ARGV[id + 1].nil?
       options[:result] = ARGV[id + 1]
-    elsif %w[-f --format].include?(argument)
-      options[:pretty] = true
+    elsif argument.chars.first == '-'
+      argument.each_char do |arg_char|
+        case arg_char
+        when 'f'
+          options[:pretty] = true
+        when 'n'
+          options[:add_name] = true
+        when '?', 'h'
+          help.call
+        end
+      end
     end
   end
 end
@@ -71,7 +92,7 @@ end
 
 puts "Parsing #{source_files.length} file(s)"
 source_files.each do |geojson_file|
-  collection.add(geojson_file)
+  collection.add(geojson_file, options[:add_name])
 end
 
 puts "Saving #{options[:result]}"

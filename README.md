@@ -16,7 +16,7 @@ geo-cat.rb [-fn] [-d source_dir] [-r result_file]
 
 ```-r``` - Sets the name of the output file and it path.
 
-```-d``` - Sets the directory to search for GeoJSON files. If the output file is not set it will save result.geojson in this folder.
+```-d``` - Sets the directory to search for GeoJSON files. If no output file is set, then saves the result in the same directory.
 
 ```-f``` - Generates formatted output file.
 

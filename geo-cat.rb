@@ -6,8 +6,8 @@ require 'json'
 
 help = proc do
   puts "Usage: geo-cat.rb [-fn] [-d source_dir] [-r result_file]
-  -f - Formatted output
-  -n - Store filename in feature properties"
+  -f - Generates formatted output file
+  -n - Stores the source filename in the feature properties"
   exit 0
 end
 
